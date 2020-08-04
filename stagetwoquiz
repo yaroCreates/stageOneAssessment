@@ -1,1 +1,104 @@
+#Importing necessary libraries
+ 
+import numpy as np
+import pandas as pd
+import seaborn as sns
 
+#Importing dataset
+
+energydata = pd.read_csv('C:/Users/Kurzin Kazan/Downloads/energydata_complete.csv')
+
+energydata.describe()
+
+#Dropping the lights and date cloumns in the dataset
+energydata.drop(['date', 'lights'], axis = 1, inplace = True)
+
+
+#Normalizing the dataset
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
+normalised_energydata = pd.DataFrame(scaler.fit_transform(energydata), columns = energydata.columns)
+features_energydata = normalised_energydata.drop(columns = ['T2','T6'])
+energydata_target = normalised_energydata['T2']
+
+
+#Splitting the dataset
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(features_energydata, energydata_target, test_size = 0.3,
+                                                    random_state=42)
+
+#Training the model
+from sklearn.linear_model import LinearRegression
+linear_model = LinearRegression()
+linear_model.fit(x_train,y_train)
+
+#Prediction
+predicted_values = linear_model.predict(x_test)
+
+
+
+
+# R-Squared
+from sklearn.metrics import r2_score
+r2 = r2_score(y_test, predicted_values)
+round(r2, 3)
+
+
+#Mean absolute error
+from sklearn.metrics import mean_absolute_error
+mae = mean_absolute_error(y_test, predicted_values)
+round(mae,3)
+
+
+#Residual Sum of Squares
+rss = np.sum(np.square(y_test - predicted_values))
+round(rss,3)
+
+
+#Root mean square error
+from sklearn.metrics import mean_squared_error
+rmse = np.sqrt(mean_squared_error(y_test, predicted_values))
+round(rmse,3)
+
+
+#Ridge Regularization
+from sklearn.linear_model import Ridge
+ridge_reg = Ridge(alpha=0.4)
+ridge_reg.fit(x_train, y_train)
+
+
+#Lasso Regularization
+from sklearn.linear_model import Lasso
+lasso_reg = Lasso(alpha=0.001)
+lasso_reg.fit(x_train, y_train)
+
+#Comparing the effect of Regularization
+def get_weights_df(model, feat, col_name):
+    weights = pd.Series(model.coef_, feat.columns).sort_values()
+    weights_df = pd.DataFrame(weights).reset_index()
+    weights_df.columns = ['Features', col_name]
+    weights_df[col_name].round(3)
+    return weights_df
+
+
+
+linear_model_weights = get_weights_df(linear_model, x_train, 'Linear_Model_Weights')
+ridge_weights_df = get_weights_df(ridge_reg, x_train, 'Ridge_Weights')
+lasso_weights_df = get_weights_df(linear_model, x_train, 'Lasso_Weights')
+
+
+final_weights = pd.merge(linear_model_weights, ridge_weights_df, on = 'Features')
+final_weights = pd.merge(final_weights, lasso_weights_df, on = 'Features')
+
+
+
+from sklearn.linear_model import LinearRegression
+linear_model = LinearRegression()
+linear_model.fit(x_train,y_train)
+
+predicted_values = linear_model.predict(x_test)
+
+
+from sklearn.metrics import mean_squared_error
+rmse = np.sqrt(mean_squared_error(y_test, predicted_values))
+round(rmse,3)
